@@ -51,4 +51,9 @@ let words =
     |> List.map (fun task -> Async.RunSynchronously task)
     |> List.ofSeq
     |> List.concat
+    |> List.filter (fun w -> w.Length = 5)
     |> List.distinct
+
+System.IO.File.WriteAllText("words.json", System.Text.Json.JsonSerializer.Serialize(words))
+
+//System.IO.FileInfo.(System.Text.Json.JsonSerializer.Serialize(words), "words.json")
