@@ -21,7 +21,7 @@ type IncludeLetter = {
 type WordleState = 
     {
         Words: string array
-        FixedLetters: FixedLetter list
+        FixedLetters: Map<int, string>
         ExcludeLetters: string
         IncludeLetters: IncludeLetter list
         Filter: string
@@ -30,10 +30,7 @@ type WordleState =
         static member filterCandidates (state: WordleState) =
             let excludedCharactersArr = state.ExcludeLetters.ToCharArray() |> Array.map (fun x -> x.ToString())
             let wordList = state.Words |> List.ofArray
-            let fixedLetters = 
-                state.FixedLetters
-                |> List.map (fun x -> x.Position, x.Letter)
-                |> Map.ofList
+            let fixedLetters = state.FixedLetters
             let includeLetters = state.IncludeLetters
             let result = 
                 wordList
@@ -67,7 +64,7 @@ type Components =
             React.useState(
                 {
                     Words = Data.words
-                    FixedLetters = []
+                    FixedLetters = Map.empty
                     ExcludeLetters = ""
                     IncludeLetters = []
                     Filter = ""
@@ -78,6 +75,67 @@ type Components =
         Html.div [
             Html.h1 "Filtered candidates"
             Html.div [
+                Html.label [
+                    Html.text "Solved"
+                ]
+                Html.div [ 
+                    for i in 0 .. 4 do
+                        yield Html.input [
+                            prop.value (state.FixedLetters |> Map.tryFind i |> Option.defaultValue "")
+                            prop.maxLength 1
+                            prop.onChange (fun (v: string) ->
+                                let fixedLetters = state.FixedLetters |> Map.add i (v.ToUpper())
+                                setState { state with FixedLetters = fixedLetters })
+                        ]
+                ]
+                Html.label [
+                    Html.text "Include"
+                ]
+                Html.button [
+                    prop.text "Add include letter"
+                    prop.onClick (fun _ ->
+                        let includeLetters = state.IncludeLetters @ [{ Letter = ""; InvalidPositions = [] }]
+                        setState { state with IncludeLetters = includeLetters })
+                ]
+                Html.div 
+                    (state.IncludeLetters
+                    |> List.mapi (fun index includeLetter ->
+                        Html.div [
+                            Html.input [
+                                prop.value includeLetter.Letter
+                                prop.maxLength 1
+                                prop.onChange (fun (v: string) -> 
+                                    let includeLetters =
+                                        state.IncludeLetters
+                                        |> List.mapi (fun i il' ->
+                                            if i = index then { Letter = v.ToUpper(); InvalidPositions = il'.InvalidPositions }
+                                            else il'
+                                        )
+                                    setState { state with IncludeLetters = includeLetters })
+                            ]
+                            Html.div
+                                [ for i in 0 .. 4 do
+                                    yield Html.input [
+                                        prop.type' "checkbox"
+                                        prop.isChecked (includeLetter.InvalidPositions |> List.contains i)
+                                        prop.onCheckedChange (fun v ->
+                                            let invalidPositions' = 
+                                                if v then i::includeLetter.InvalidPositions
+                                                else includeLetter.InvalidPositions |> List.filter (fun x -> x <> i)
+                                            let includeLetter' = { Letter = includeLetter.Letter; InvalidPositions = invalidPositions' }
+                                            let includeLetters' = 
+                                                state.IncludeLetters
+                                                |> List.mapi (fun i il' ->
+                                                    if i = index then includeLetter'
+                                                    else il'
+                                                )
+                                            console.log("IL: ", includeLetters')
+                                            setState({state with IncludeLetters = includeLetters'})
+                                        )
+                                    ]
+                                ]
+                        ]
+                    ))
                 Html.label [
                     Html.text "Filter: "
                 ]
