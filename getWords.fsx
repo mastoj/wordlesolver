@@ -51,8 +51,20 @@ let words =
     |> List.map (fun task -> Async.RunSynchronously task)
     |> List.ofSeq
     |> List.concat
-    |> List.filter (fun w -> w.Length = 5 && not (w.Contains('<')))
+    |> List.filter (fun w ->
+        if w = "black"
+        then 
+            printfn "found black: %A" (w.ToUpper() = w, w.ToUpper(), w)
+        w.Length = 5 && 
+        (not (w.Contains('<')) &&
+        w.ToUpper() = w))
     |> List.distinct
+    |> List.map(fun w ->
+        if w.Contains("black")
+        then 
+            printfn "==> found black: %A" (w.ToUpper() = w, w.ToUpper(), w)
+        w
+    )
 
 System.IO.File.WriteAllText("words.json", System.Text.Json.JsonSerializer.Serialize(words))
 

@@ -141,13 +141,12 @@ module.exports = {
                     isProduction
                         ? MiniCssExtractPlugin.loader
                         : 'style-loader',
-                    {
-                        loader: 'css-loader',
-                    },
+                    'css-loader',
                     {
                         loader: 'sass-loader',
-                        options: { implementation: require("sass") }
-                    }
+                        options: { implementation: require('sass') }
+                    },
+                    'postcss-loader'
                 ],
             },
             {

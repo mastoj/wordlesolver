@@ -6,7 +6,7 @@ open Browser.Dom
 open Fable.Core
 open Fable.Core.JsInterop
 
-importSideEffects "./styles/global.scss"
+importSideEffects "./styles/main.css"
 ReactDOM.render(
     Components.WordleSolver(),
     document.getElementById "feliz-app"

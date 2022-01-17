@@ -20,7 +20,7 @@ type IncludeLetter = {
 }
 type WordleState = 
     {
-        Words: string array
+        Words: string list
         FixedLetters: Map<int, string>
         ExcludeLetters: string
         IncludeLetters: IncludeLetter list
@@ -29,7 +29,7 @@ type WordleState =
     with
         static member filterCandidates (state: WordleState) =
             let excludedCharactersArr = state.ExcludeLetters.ToCharArray() |> Array.map (fun x -> x.ToString())
-            let wordList = state.Words |> List.ofArray
+            let wordList = state.Words
             let fixedLetters = state.FixedLetters
             let includeLetters = state.IncludeLetters
             let result = 
@@ -50,8 +50,8 @@ type WordleState =
                             let letter = includeLetter.Letter
                             let indices = includeLetter.InvalidPositions |> Set.ofList
                             let letterIndices = wordIndicesLookup |> Map.tryFind letter |> Option.defaultValue Set.empty
-                            let diff = Set.difference letterIndices indices
-                            diff |> Set.isEmpty |> not
+                            let diff = Set.intersect indices letterIndices
+                            diff |> Set.isEmpty
                         ) |> List.contains false |> not
                     letterComparison && includeComparison
                 )
@@ -63,7 +63,7 @@ type Components =
         let (state, setState) =
             React.useState(
                 {
-                    Words = Data.words
+                    Words = Data.words |> List.ofArray
                     FixedLetters = Map.empty
                     ExcludeLetters = ""
                     IncludeLetters = []
@@ -71,90 +71,159 @@ type Components =
                 })
         let candidates = WordleState.filterCandidates state
         let filteredCandidates = candidates |> List.filter (fun w -> w.Contains(state.Filter))
-        console.log("filtered candidates", Data.words)
         Html.div [
-            Html.h1 "Filtered candidates"
-            Html.div [
-                Html.label [
-                    Html.text "Solved"
+            prop.className "flex flex-col gap-4"
+            prop.children [
+                Html.h1 [
+                    prop.text "Wordle Solver"
+                    prop.className "w-full text-center font-bold text-4xl"
                 ]
-                Html.div [ 
-                    for i in 0 .. 4 do
-                        yield Html.input [
-                            prop.value (state.FixedLetters |> Map.tryFind i |> Option.defaultValue "")
-                            prop.maxLength 1
-                            prop.onChange (fun (v: string) ->
-                                let fixedLetters = state.FixedLetters |> Map.add i (v.ToUpper())
-                                setState { state with FixedLetters = fixedLetters })
+                Html.div [
+                    Html.label [
+                        Html.h2 "Solved"
+                    ]
+                    Html.div [
+                        prop.className "flex gap-2 justify-around"
+                        prop.children
+                            [ for i in 0 .. 4 do
+                                yield 
+                                    Html.div [
+                                        prop.className "flex-0 w-12"
+                                        prop.children [
+                                            Html.input [
+                                                prop.className "rounded w-full text-gray-800 text-center"
+                                                prop.value (state.FixedLetters |> Map.tryFind i |> Option.defaultValue "")
+                                                prop.maxLength 1
+                                                prop.onChange (fun (v: string) ->
+                                                    let fixedLetters = state.FixedLetters |> Map.add i (v.ToUpper())
+                                                    setState { state with FixedLetters = fixedLetters })
+                                            ]
+                                        ]
+                                    ]
+                            ]
+                    ]
+                ]
+                Html.div [
+                    Html.label [
+                        Html.h2 "Exclude letters: "
+                    ]
+                    Html.input [
+                        prop.className "w-full rounded text-gray-800"
+                        prop.onChange (fun (v: string) -> 
+                            let upper = v.ToUpper()
+                            setState({ state with ExcludeLetters = upper}))
+                    ]
+
+                ]
+                Html.div [
+                    prop.className "flex gap-2 flex-col"
+                    prop.children [
+                        Html.label [
+                            Html.text "Include letters"
                         ]
-                ]
-                Html.label [
-                    Html.text "Include"
-                ]
-                Html.button [
-                    prop.text "Add include letter"
-                    prop.onClick (fun _ ->
-                        let includeLetters = state.IncludeLetters @ [{ Letter = ""; InvalidPositions = [] }]
-                        setState { state with IncludeLetters = includeLetters })
-                ]
-                Html.div 
-                    (state.IncludeLetters
-                    |> List.mapi (fun index includeLetter ->
                         Html.div [
-                            Html.input [
-                                prop.value includeLetter.Letter
-                                prop.maxLength 1
-                                prop.onChange (fun (v: string) -> 
-                                    let includeLetters =
-                                        state.IncludeLetters
-                                        |> List.mapi (fun i il' ->
-                                            if i = index then { Letter = v.ToUpper(); InvalidPositions = il'.InvalidPositions }
-                                            else il'
-                                        )
+                            prop.className "flex flex-col gap-2"
+                            prop.children
+                                (state.IncludeLetters
+                                |> List.mapi (fun index includeLetter ->
+                                    Html.div [
+                                        prop.className "flex gap-2"
+                                        prop.children [
+                                            Html.label [ prop.text "Letter:"]
+                                            Html.input [
+                                                prop.className "rounded w-12 text-gray-800 text-center"
+                                                prop.value includeLetter.Letter
+                                                prop.maxLength 1
+                                                prop.onChange (fun (v: string) -> 
+                                                    let includeLetters =
+                                                        state.IncludeLetters
+                                                        |> List.mapi (fun i il' ->
+                                                            if i = index then { Letter = v.ToUpper(); InvalidPositions = il'.InvalidPositions }
+                                                            else il'
+                                                        )
+                                                    setState { state with IncludeLetters = includeLetters })
+                                            ]
+                                            Html.label [ prop.text "Invalid positions:"]
+                                            Html.div [
+                                                prop.className "flex gap-1 justify-between"
+                                                prop.children
+                                                    [ for i in 0 .. 4 do
+                                                        yield 
+                                                            Html.label [
+                                                                prop.htmlFor (sprintf "invalid-position-%i-%i" index i)
+                                                                prop.children [
+                                                                    Html.span [
+                                                                        prop.text (sprintf "%i" (i+1))
+                                                                        prop.className (sprintf "rounded p-2 %s" (if includeLetter.InvalidPositions |> List.contains i then "bg-red-700" else "bg-green-700"))
+                                                                    ]
+                                                                    Html.input [
+                                                                        prop.className "invisible"
+                                                                        prop.name (sprintf "invalid-position-%i-%i" index i)
+                                                                        prop.id (sprintf "invalid-position-%i-%i" index i)
+                                                                        prop.type' "checkbox"
+                                                                        prop.isChecked (includeLetter.InvalidPositions |> List.contains i)
+                                                                        prop.onCheckedChange (fun v ->
+                                                                            let invalidPositions' = 
+                                                                                if v then i::includeLetter.InvalidPositions
+                                                                                else includeLetter.InvalidPositions |> List.filter (fun x -> x <> i)
+                                                                            let includeLetter' = { Letter = includeLetter.Letter; InvalidPositions = invalidPositions' }
+                                                                            let includeLetters' = 
+                                                                                state.IncludeLetters
+                                                                                |> List.mapi (fun i il' ->
+                                                                                    if i = index then includeLetter'
+                                                                                    else il'
+                                                                                )
+                                                                            setState({state with IncludeLetters = includeLetters'})
+                                                                        )
+                                                                    ]
+                                                                ]
+                                                            ]
+                                                    ]
+                                            ]
+
+                                        ]
+                                    ]
+                                ))
+                        ]
+                        Html.div [
+                            Html.button [
+                                prop.text "Add include letter"
+                                prop.className "p-3 bg-green-700 text-white font-bold rounded"
+                                prop.onClick (fun _ ->
+                                    let includeLetters = state.IncludeLetters @ [{ Letter = ""; InvalidPositions = [] }]
                                     setState { state with IncludeLetters = includeLetters })
                             ]
-                            Html.div
-                                [ for i in 0 .. 4 do
-                                    yield Html.input [
-                                        prop.type' "checkbox"
-                                        prop.isChecked (includeLetter.InvalidPositions |> List.contains i)
-                                        prop.onCheckedChange (fun v ->
-                                            let invalidPositions' = 
-                                                if v then i::includeLetter.InvalidPositions
-                                                else includeLetter.InvalidPositions |> List.filter (fun x -> x <> i)
-                                            let includeLetter' = { Letter = includeLetter.Letter; InvalidPositions = invalidPositions' }
-                                            let includeLetters' = 
-                                                state.IncludeLetters
-                                                |> List.mapi (fun i il' ->
-                                                    if i = index then includeLetter'
-                                                    else il'
-                                                )
-                                            console.log("IL: ", includeLetters')
-                                            setState({state with IncludeLetters = includeLetters'})
-                                        )
-                                    ]
-                                ]
+
                         ]
-                    ))
-                Html.label [
-                    Html.text "Filter: "
+
+                    ]
                 ]
-                Html.input [
-                    prop.onChange (fun (v: string) -> 
-                        let upper = v.ToUpper()
-                        setState({ state with Filter = upper}))
+                Html.div [
+                    Html.label [
+                        Html.text "Filter: "
+                    ]
+                    Html.input [
+                        prop.className "w-full rounded text-gray-800"
+                        prop.onChange (fun (v: string) -> 
+                            let upper = v.ToUpper()
+                            setState({ state with Filter = upper}))
+                    ]
                 ]
-                Html.label [
-                    Html.text "Exclude letters: "
+                Html.div [
+                    prop.children [
+                        Html.h2 [
+                            prop.className "font-bold text-2xl"
+                            prop.text "Candidate words"
+                        ]
+                        Html.div [
+                            prop.className "flex gap-4 flex-wrap"
+                            prop.children
+                                (filteredCandidates
+                                |> List.take (min 100 filteredCandidates.Length)
+                                |> List.map (fun w -> Html.span w))
+                        ] 
+                    ]
                 ]
-                Html.input [
-                    prop.onChange (fun (v: string) -> 
-                        let upper = v.ToUpper()
-                        setState({ state with ExcludeLetters = upper}))
-                ]
-            ]
-            Html.ul [
-                for w in filteredCandidates do yield Html.li w
             ]
         ]
 
