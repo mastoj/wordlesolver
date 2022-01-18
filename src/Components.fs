@@ -129,56 +129,66 @@ type Components =
                                     Html.div [
                                         prop.className "flex gap-2"
                                         prop.children [
-                                            Html.label [ prop.text "Letter:"]
-                                            Html.input [
-                                                prop.className "rounded w-12 text-gray-800 text-center"
-                                                prop.value includeLetter.Letter
-                                                prop.maxLength 1
-                                                prop.onChange (fun (v: string) -> 
-                                                    let includeLetters =
-                                                        state.IncludeLetters
-                                                        |> List.mapi (fun i il' ->
-                                                            if i = index then { Letter = v.ToUpper(); InvalidPositions = il'.InvalidPositions }
-                                                            else il'
-                                                        )
-                                                    setState { state with IncludeLetters = includeLetters })
-                                            ]
-                                            Html.label [ prop.text "Invalid positions:"]
                                             Html.div [
-                                                prop.className "flex gap-1 justify-between"
-                                                prop.children
-                                                    [ for i in 0 .. 4 do
-                                                        yield 
-                                                            Html.label [
-                                                                prop.htmlFor (sprintf "invalid-position-%i-%i" index i)
-                                                                prop.children [
-                                                                    Html.span [
-                                                                        prop.text (sprintf "%i" (i+1))
-                                                                        prop.className (sprintf "rounded p-2 %s" (if includeLetter.InvalidPositions |> List.contains i then "bg-red-700" else "bg-green-700"))
-                                                                    ]
-                                                                    Html.input [
-                                                                        prop.className "invisible"
-                                                                        prop.name (sprintf "invalid-position-%i-%i" index i)
-                                                                        prop.id (sprintf "invalid-position-%i-%i" index i)
-                                                                        prop.type' "checkbox"
-                                                                        prop.isChecked (includeLetter.InvalidPositions |> List.contains i)
-                                                                        prop.onCheckedChange (fun v ->
-                                                                            let invalidPositions' = 
-                                                                                if v then i::includeLetter.InvalidPositions
-                                                                                else includeLetter.InvalidPositions |> List.filter (fun x -> x <> i)
-                                                                            let includeLetter' = { Letter = includeLetter.Letter; InvalidPositions = invalidPositions' }
-                                                                            let includeLetters' = 
-                                                                                state.IncludeLetters
-                                                                                |> List.mapi (fun i il' ->
-                                                                                    if i = index then includeLetter'
-                                                                                    else il'
+                                                prop.className "flex gap-1 flex-col"
+                                                prop.children [
+                                                    Html.label [ prop.text "Letter:"]
+                                                    Html.input [
+                                                        prop.className "rounded w-12 text-gray-800 text-center"
+                                                        prop.value includeLetter.Letter
+                                                        prop.maxLength 1
+                                                        prop.onChange (fun (v: string) -> 
+                                                            let includeLetters =
+                                                                state.IncludeLetters
+                                                                |> List.mapi (fun i il' ->
+                                                                    if i = index then { Letter = v.ToUpper(); InvalidPositions = il'.InvalidPositions }
+                                                                    else il'
+                                                                )
+                                                            setState { state with IncludeLetters = includeLetters })
+                                                    ]
+                                                ]
+                                            ]
+                                            Html.div [
+                                                prop.className "flex-1 flex flex-col gap-1"
+                                                prop.children [
+                                                    Html.label [ prop.text "Invalid positions:"]
+                                                    Html.div [
+                                                        prop.className "flex gap-1 justify-between"
+                                                        prop.children
+                                                            [ for i in 0 .. 4 do
+                                                                yield 
+                                                                    Html.label [
+                                                                        prop.htmlFor (sprintf "invalid-position-%i-%i" index i)
+                                                                        prop.children [
+                                                                            Html.div [
+                                                                                prop.className (sprintf "rounded w-12 h-12 p-3 leading-12 %s text-center" (if includeLetter.InvalidPositions |> List.contains i then "bg-red-700" else "bg-green-700"))
+                                                                                prop.text (sprintf "%i" (i+1))
+                                                                            ]
+                                                                            Html.input [
+                                                                                prop.className "invisible"
+                                                                                prop.name (sprintf "invalid-position-%i-%i" index i)
+                                                                                prop.id (sprintf "invalid-position-%i-%i" index i)
+                                                                                prop.type' "checkbox"
+                                                                                prop.isChecked (includeLetter.InvalidPositions |> List.contains i)
+                                                                                prop.onCheckedChange (fun v ->
+                                                                                    let invalidPositions' = 
+                                                                                        if v then i::includeLetter.InvalidPositions
+                                                                                        else includeLetter.InvalidPositions |> List.filter (fun x -> x <> i)
+                                                                                    let includeLetter' = { Letter = includeLetter.Letter; InvalidPositions = invalidPositions' }
+                                                                                    let includeLetters' = 
+                                                                                        state.IncludeLetters
+                                                                                        |> List.mapi (fun i il' ->
+                                                                                            if i = index then includeLetter'
+                                                                                            else il'
+                                                                                        )
+                                                                                    setState({state with IncludeLetters = includeLetters'})
                                                                                 )
-                                                                            setState({state with IncludeLetters = includeLetters'})
-                                                                        )
+                                                                            ]
+                                                                        ]
                                                                     ]
-                                                                ]
                                                             ]
                                                     ]
+                                                ]
                                             ]
 
                                         ]
@@ -216,7 +226,7 @@ type Components =
                             prop.text "Candidate words"
                         ]
                         Html.div [
-                            prop.className "flex gap-4 flex-wrap"
+                            prop.className "flex gap-4 flex-wrap justify-between"
                             prop.children
                                 (filteredCandidates
                                 |> List.take (min 100 filteredCandidates.Length)
