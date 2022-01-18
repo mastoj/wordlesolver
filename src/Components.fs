@@ -213,7 +213,7 @@ type Components =
                         Html.text "Filter: "
                     ]
                     Html.input [
-                        prop.className "w-full rounded text-gray-800"
+                        prop.className "w-full rounded text-gray-800 p-2"
                         prop.onChange (fun (v: string) -> 
                             let upper = v.ToUpper()
                             setState({ state with Filter = upper}))
