@@ -50,8 +50,8 @@ type WordleState =
                             let letter = includeLetter.Letter
                             let indices = includeLetter.InvalidPositions |> Set.ofList
                             let letterIndices = wordIndicesLookup |> Map.tryFind letter |> Option.defaultValue Set.empty
-                            let diff = Set.intersect indices letterIndices
-                            diff |> Set.isEmpty
+                            let diff = Set.difference letterIndices indices
+                            diff |> Set.isEmpty |> not
                         ) |> List.contains false |> not
                     letterComparison && includeComparison
                 )
